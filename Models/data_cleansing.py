@@ -1,10 +1,9 @@
 import pandas as pd
-import numpy as np
 
 
 def _convert_data_types(design_matrix):
     """Conversion of categorical type continuous features into objects"""
-    conversion_list = ['bathrooms', 'bedrooms']
+    conversion_list = ['bathrooms', 'bedrooms', 'month', 'day']
     for column in conversion_list:
         design_matrix[column] = design_matrix[column].apply(str)
     return design_matrix
@@ -22,15 +21,24 @@ def _create_dummies_for_categorical_features(design_matrix, train=False):
     return design_matrix
 
 
-def _clean_design_matrix(design_matrix, train=False):
+def _get_month_day_from_posting_date(design_matrix):
+    """Capture month & day from date of posting"""
+    design_matrix['day'] = design_matrix['created'].dt.day
+    design_matrix['month'] = design_matrix['created'].dt.month
+    design_matrix.drop('created', axis=1, inplace=True)
+    return design_matrix
+
+
+def clean_design_matrix(design_matrix, train=False):
     """Clean/transform design matrix"""
     if train:
         design_matrix = design_matrix[['interest_level', 'price', 'bathrooms',
-                                       'bedrooms']]
+                                       'bedrooms', 'created']]
     else:
-        design_matrix = design_matrix[['price', 'bathrooms', 'bedrooms']]
+        design_matrix = design_matrix[['price', 'bathrooms', 'bedrooms',
+                                       'created']]
+    design_matrix = _get_month_day_from_posting_date(design_matrix)
     design_matrix = _convert_data_types(design_matrix)
     design_matrix = _create_dummies_for_categorical_features(design_matrix,
                                                              train)
     return design_matrix
-
