@@ -1,5 +1,4 @@
 import pandas as pd
-import numpy as np
 
 
 def _convert_data_types(design_matrix):
@@ -32,6 +31,7 @@ def _get_time_features_from_posting_date(design_matrix):
 
 
 def _extract_features(design_matrix):
+    """Extract house features from the list provided"""
     feature_list = []
     design_matrix.reset_index(inplace=True)
     for row in range(design_matrix.shape[0]):
@@ -41,10 +41,23 @@ def _extract_features(design_matrix):
 
 
 def _street_or_avenue(design_matrix):
+    """Extract places/areas from the displayed address"""
     design_matrix['Avenue'] = design_matrix['display_address']\
-        .str.contains("Ave")
+        .str.contains("Ave|ave|AVE")
     design_matrix['Street'] = design_matrix['display_address'] \
-        .str.contains("St")
+        .str.contains("St|st|ST")
+    design_matrix['Place'] = design_matrix['display_address'] \
+        .str.contains("Place|place|PLACE")
+    design_matrix['Boulevard'] = design_matrix['display_address'] \
+        .str.contains("Boulevard|Blvd|blvd|BOULEVARD|BLVD")
+    design_matrix['Broadway'] = design_matrix['display_address'] \
+        .str.contains("Broad|broad|BROAD")
+    design_matrix['Parkway'] = design_matrix['display_address'] \
+        .str.contains("Park|park|PARK")
+    design_matrix['Road'] = design_matrix['display_address'] \
+        .str.contains("Road|road|ROAD")
+    design_matrix['Riverside'] = design_matrix['display_address'] \
+        .str.contains("River|Water|RIVER|WATER|river|water")
     design_matrix.drop('display_address', axis=1, inplace=True)
     return design_matrix
 
