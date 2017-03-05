@@ -69,7 +69,7 @@ class MultiClassLogRegression(object):
         submission['high'] = predictions[:, 0]
         submission['medium'] = predictions[:, 2]
         submission['low'] = predictions[:, 1]
-        submission.to_csv('../Submissions/LogReg6_tuned_' + str(
+        submission.to_csv('../Submissions/LogReg9_tuned_' + str(
             self._calculate_log_loss()) + '.csv', index=False)
 
 MultiClassLogRegression().submission()
