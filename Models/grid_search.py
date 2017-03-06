@@ -22,9 +22,9 @@ class Model(object):
     def _define_regressor_and_parameter_candidates():
         """Define model fit function & parameters"""
         regressor = RandomForestClassifier(
-            random_state=99, criterion='gini',
-            max_features='sqrt', min_samples_split=5, min_samples_leaf=3)
-        parameters = {'n_estimators': range(1750, 1900, 50)}
+            random_state=99, max_features='sqrt',
+            min_samples_split=4, min_samples_leaf=2, criterion='entropy')
+        parameters = {'n_estimators': range(1950, 2200, 50)}
         return regressor, parameters
 
     def grid_search_for_best_estimator(self):
@@ -33,7 +33,7 @@ class Model(object):
         regressor, parameters = self\
             ._define_regressor_and_parameter_candidates()
         model = GridSearchCV(regressor, parameters, cv=5, verbose=2,
-                             scoring='neg_log_loss', iid=False, n_jobs=8)
+                             scoring='neg_log_loss', iid=False, n_jobs=4)
         model.fit(self.design_matrix[self.predictors],
                   self.design_matrix['interest_level'])
         print model.best_params_

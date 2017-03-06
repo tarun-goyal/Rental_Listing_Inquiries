@@ -66,18 +66,31 @@ def _street_or_avenue(design_matrix):
     return design_matrix
 
 
+def _info_from_other_features(design_matrix):
+    design_matrix["num_photos"] = design_matrix["photos"].apply(len)
+    design_matrix["num_features"] = design_matrix["features"].apply(len)
+    design_matrix["num_description_words"] = design_matrix[
+        "description"].apply(lambda x: len(x.split(" ")))
+    design_matrix.drop(['photos', 'features', 'description'],
+                       axis=1, inplace=True)
+    return design_matrix
+
+
 def clean_design_matrix(design_matrix, train=False):
     """Clean/transform design matrix"""
     if train:
         design_matrix = design_matrix[[
             'interest_level', 'price', 'bathrooms', 'bedrooms', 'created',
-            'display_address']]
+            'display_address', 'latitude', 'longitude', 'photos', 'features',
+            'description']]
     else:
         design_matrix = design_matrix[[
             'price', 'bathrooms', 'bedrooms', 'created',
-            'display_address']]
+            'display_address', 'latitude', 'longitude', 'photos', 'features',
+            'description']]
     design_matrix = _street_or_avenue(design_matrix)
     design_matrix = _get_time_features_from_posting_date(design_matrix)
+    design_matrix = _info_from_other_features(design_matrix)
     design_matrix = _convert_data_types(design_matrix)
     # design_matrix = _extract_features(design_matrix)
     design_matrix = _create_dummies_for_categorical_features(design_matrix,

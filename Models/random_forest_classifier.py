@@ -31,8 +31,8 @@ class RandomForestModel(object):
     def _build_model(design_matrix, predictors):
         """Building random forest model with default parameters."""
         model = RandomForestClassifier(
-            n_estimators=1850, criterion='gini', max_features='sqrt',
-            min_samples_split=5, min_samples_leaf=3, random_state=99, n_jobs=8)
+            n_estimators=2050, criterion='gini', max_features='sqrt',
+            min_samples_split=4, min_samples_leaf=2, random_state=99, n_jobs=8)
         model.fit(design_matrix[predictors], design_matrix['interest_level'])
         return model
 
@@ -67,7 +67,7 @@ class RandomForestModel(object):
         submission['high'] = predictions[:, 0]
         submission['medium'] = predictions[:, 2]
         submission['low'] = predictions[:, 1]
-        submission.to_csv('../Submissions/RF3_tuned_' + str(
+        submission.to_csv('../Submissions/RF5_tuned_' + str(
             self._calculate_log_loss()) + '.csv', index=False)
 
 RandomForestModel().submission()
