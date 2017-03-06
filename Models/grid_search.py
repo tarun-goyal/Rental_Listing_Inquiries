@@ -1,4 +1,4 @@
-from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import GridSearchCV
 from pandas import DataFrame
 import pandas as pd
@@ -21,9 +21,10 @@ class Model(object):
     @staticmethod
     def _define_regressor_and_parameter_candidates():
         """Define model fit function & parameters"""
-        regressor = LogisticRegression(max_iter=5000, penalty='l2',
-                                       solver='newton-cg')
-        parameters = {'multi_class': ['ovr', 'multinomial']}
+        regressor = RandomForestClassifier(
+            random_state=99, criterion='gini',
+            max_features='sqrt', min_samples_split=5, min_samples_leaf=3)
+        parameters = {'n_estimators': range(1750, 1900, 50)}
         return regressor, parameters
 
     def grid_search_for_best_estimator(self):
@@ -32,14 +33,14 @@ class Model(object):
         regressor, parameters = self\
             ._define_regressor_and_parameter_candidates()
         model = GridSearchCV(regressor, parameters, cv=5, verbose=2,
-                             scoring='neg_log_loss', iid=False)
+                             scoring='neg_log_loss', iid=False, n_jobs=8)
         model.fit(self.design_matrix[self.predictors],
                   self.design_matrix['interest_level'])
         print model.best_params_
         print model.best_score_
         cv_results = model.cv_results_
         results = DataFrame.from_dict(cv_results, orient='columns')
-        results.to_csv('../Model_results/LogReg_GridSearch3_results.csv',
+        results.to_csv('../Model_results/RF_GridSearch5.csv',
                        index=False)
 
 Model().grid_search_for_best_estimator()

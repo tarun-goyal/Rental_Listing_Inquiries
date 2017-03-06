@@ -3,7 +3,7 @@ import pandas as pd
 
 def _convert_data_types(design_matrix):
     """Conversion of categorical type continuous features into objects"""
-    conversion_list = ['bathrooms', 'bedrooms', 'month', 'day', 'hour']
+    conversion_list = ['bathrooms', 'bedrooms']
     for column in conversion_list:
         design_matrix[column] = design_matrix[column].apply(str)
     return design_matrix
@@ -58,6 +58,10 @@ def _street_or_avenue(design_matrix):
         .str.contains("Road|road|ROAD")
     design_matrix['Riverside'] = design_matrix['display_address'] \
         .str.contains("River|Water|RIVER|WATER|river|water")
+    design_matrix['W'] = design_matrix['display_address'] \
+        .str.contains("W")
+    design_matrix['E'] = design_matrix['display_address'] \
+        .str.contains("E")
     design_matrix.drop('display_address', axis=1, inplace=True)
     return design_matrix
 
