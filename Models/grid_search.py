@@ -1,4 +1,4 @@
-from sklearn.ensemble import RandomForestClassifier
+from xgboost.sklearn import XGBClassifier
 from sklearn.model_selection import GridSearchCV
 from pandas import DataFrame
 import pandas as pd
@@ -21,10 +21,11 @@ class Model(object):
     @staticmethod
     def _define_regressor_and_parameter_candidates():
         """Define model fit function & parameters"""
-        regressor = RandomForestClassifier(
-            random_state=99, max_features='sqrt',
-            min_samples_split=4, min_samples_leaf=2, criterion='entropy')
-        parameters = {'n_estimators': range(1950, 2200, 50)}
+        regressor = XGBClassifier(
+            n_estimators=489, learning_rate=0.1, objective='multi:softprob',
+            max_depth=5, min_child_weight=1, subsample=0.8, gamma=0.3,
+            colsample_bytree=0.6, scale_pos_weight=1, reg_lambda=1)
+        parameters = {'reg_alpha': [0.1, 0.2, 0.3, 0.4, 0.5]}
         return regressor, parameters
 
     def grid_search_for_best_estimator(self):
@@ -32,15 +33,15 @@ class Model(object):
         estimator"""
         regressor, parameters = self\
             ._define_regressor_and_parameter_candidates()
-        model = GridSearchCV(regressor, parameters, cv=5, verbose=2,
-                             scoring='neg_log_loss', iid=False, n_jobs=4)
+        model = GridSearchCV(regressor, parameters, cv=5, verbose=4,
+                             scoring='neg_log_loss', iid=False)
         model.fit(self.design_matrix[self.predictors],
                   self.design_matrix['interest_level'])
         print model.best_params_
         print model.best_score_
         cv_results = model.cv_results_
         results = DataFrame.from_dict(cv_results, orient='columns')
-        results.to_csv('../Model_results/RF_GridSearch5.csv',
+        results.to_csv('../Model_results/XGB_GridSearch6.csv',
                        index=False)
 
 Model().grid_search_for_best_estimator()

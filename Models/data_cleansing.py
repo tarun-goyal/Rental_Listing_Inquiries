@@ -76,6 +76,13 @@ def _info_from_other_features(design_matrix):
     return design_matrix
 
 
+def _convert_classes_into_floats(design_matrix):
+    design_matrix['interest_level'] = design_matrix[
+        'interest_level'].apply(
+        lambda x: 0 if x == 'low' else 1 if x == 'medium' else 2)
+    return design_matrix
+
+
 def clean_design_matrix(design_matrix, train=False):
     """Clean/transform design matrix"""
     if train:
@@ -95,4 +102,6 @@ def clean_design_matrix(design_matrix, train=False):
     # design_matrix = _extract_features(design_matrix)
     design_matrix = _create_dummies_for_categorical_features(design_matrix,
                                                              train)
+    # if train:
+    #     _convert_classes_into_floats(design_matrix)
     return design_matrix
