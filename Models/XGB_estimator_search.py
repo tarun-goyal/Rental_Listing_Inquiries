@@ -23,11 +23,10 @@ class XGBoostingModel(object):
     @staticmethod
     def _build_model():
         """Model: Extreme Gradient Boosting model using tuned parameters"""
-        model = XGBClassifier(
+        model = XGBClassifier(seed=99,
             n_estimators=5000, learning_rate=0.01, objective='multi:softprob',
-            max_depth=5, min_child_weight=1, subsample=0.8, gamma=0.3,
-            colsample_bytree=0.6, scale_pos_weight=1, reg_lambda=1,
-            reg_alpha=0.3)
+            max_depth=5, min_child_weight=2, subsample=0.85, gamma=0.3,
+            colsample_bytree=0.75, reg_alpha=2.0)
         return model
 
     def _execute_cross_validation(self, model, cv_folds=5,

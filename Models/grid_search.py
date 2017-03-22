@@ -21,11 +21,10 @@ class Model(object):
     @staticmethod
     def _define_regressor_and_parameter_candidates():
         """Define model fit function & parameters"""
-        regressor = XGBClassifier(
-            n_estimators=489, learning_rate=0.1, objective='multi:softprob',
-            max_depth=5, min_child_weight=1, subsample=0.8, gamma=0.3,
-            colsample_bytree=0.6, scale_pos_weight=1, reg_lambda=1)
-        parameters = {'reg_alpha': [0.1, 0.2, 0.3, 0.4, 0.5]}
+        regressor = XGBClassifier(seed=99,
+            objective='multi:softprob', max_depth=5, min_child_weight=2,
+            gamma=0.3, subsample=0.85, colsample_bytree=0.75)
+        parameters = {'reg_alpha': [i/100.0 for i in range(195, 210, 5)]}
         return regressor, parameters
 
     def grid_search_for_best_estimator(self):
