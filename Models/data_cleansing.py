@@ -26,12 +26,14 @@ def _get_time_features_from_posting_date(design_matrix):
     design_matrix['day'] = design_matrix['created'].dt.day
     design_matrix['month'] = design_matrix['created'].dt.month
     design_matrix['hour'] = design_matrix['created'].dt.hour
+    design_matrix['year'] = design_matrix['created'].dt.year
+    design_matrix['weekday'] = design_matrix['created'].dt.weekday
     design_matrix.drop('created', axis=1, inplace=True)
     return design_matrix
 
 
-def _extract_features(design_matrix):
-    """Extract house features from the list provided"""
+def _label_encode_variables(design_matrix):
+    """Label encoding of """
     feature_list = []
     design_matrix.reset_index(inplace=True)
     for row in range(design_matrix.shape[0]):
@@ -42,14 +44,16 @@ def _extract_features(design_matrix):
 
 def _street_or_avenue(design_matrix):
     """Extract places/areas from the displayed address"""
+    design_matrix['display_address'] = design_matrix['display_address']\
+        .str.lower()
     design_matrix['Avenue'] = design_matrix['display_address']\
-        .str.contains("Ave|ave|AVE")
+        .str.contains("ave|avenue|ave.")
     design_matrix['Street'] = design_matrix['display_address'] \
-        .str.contains("St|st|ST")
+        .str.contains("st|street|st.")
     # design_matrix['Place'] = design_matrix['display_address'] \
     #     .str.contains("Place|place|PLACE")
-    # design_matrix['Boulevard'] = design_matrix['display_address'] \
-    #     .str.contains("Boulevard|Blvd|blvd|BOULEVARD|BLVD")
+    design_matrix['Boulevard'] = design_matrix['display_address'] \
+        .str.contains("boulevard|blvd")
     # design_matrix['Broadway'] = design_matrix['display_address'] \
     #     .str.contains("Broad|broad|BROAD")
     # design_matrix['Parkway'] = design_matrix['display_address'] \
@@ -71,8 +75,14 @@ def _info_from_features(design_matrix):
     design_matrix["num_features"] = design_matrix["features"].apply(len)
     design_matrix["num_description_words"] = design_matrix[
         "description"].apply(lambda x: len(x.split(" ")))
+    design_matrix['description'] = design_matrix['description'].str.lower()
+    design_matrix['Central Park'] = design_matrix['description'] \
+        .str.contains("central park")
+    design_matrix['Manhattan'] = design_matrix['description'] \
+        .str.contains("manhattan")
     design_matrix['Pets'] = design_matrix["features"].apply(
-        lambda x: 1 if "Pets Allowed" or "Dogs Allowed" or "Cats Allowed" in x else 0)
+        lambda x: 1 if "Pets Allowed" or "Dogs Allowed" or "Cats Allowed"
+                                                           in x else 0)
     design_matrix['Dishwasher'] = design_matrix["features"].apply(
         lambda x: 1 if "Dishwasher" in x else 0)
     design_matrix['Parking'] = design_matrix["features"].apply(
@@ -91,8 +101,10 @@ def _info_from_features(design_matrix):
         lambda x: 1 if "Hardwood Floors" or "HARDWOOD" in x else 0)
     design_matrix['Simplex'] = design_matrix["features"].apply(
         lambda x: 1 if "SIMPLEX" in x else 0)
-    design_matrix.drop(['photos', 'features', 'description'],
-                       axis=1, inplace=True)
+    design_matrix['Outdoor'] = design_matrix["features"].apply(
+        lambda x: 1 if "Outdoor Space" in x else 0)
+    design_matrix.drop(['features', 'photos', 'description'], axis=1,
+                       inplace=True)
     return design_matrix
 
 
@@ -105,30 +117,23 @@ def _convert_classes_into_floats(design_matrix):
 
 def clean_design_matrix(design_matrix, train=False):
     """Clean/transform design matrix"""
-    print 1
     if train:
         design_matrix = design_matrix[[
-            'interest_level', 'price', 'bathrooms', 'bedrooms', 'created',
-            'display_address', 'latitude', 'longitude', 'photos', 'features',
-            'description']]
+            'interest_level', 'price', 'bathrooms', 'bedrooms', 'latitude',
+            'longitude', 'description', 'listing_id', 'display_address',
+            'created', 'features', 'photos', 'building_id', 'manager_id']]
     else:
         design_matrix = design_matrix[[
-            'price', 'bathrooms', 'bedrooms', 'created',
-            'display_address', 'latitude', 'longitude', 'photos', 'features',
-            'description']]
-    print 2
-    design_matrix = _street_or_avenue(design_matrix)
-    print 3
+            'price', 'bathrooms', 'bedrooms', 'latitude', 'longitude',
+            'description', 'listing_id', 'display_address', 'created',
+            'features', 'photos', 'building_id', 'manager_id']]
+    # design_matrix = _street_or_avenue(design_matrix)
     design_matrix = _get_time_features_from_posting_date(design_matrix)
-    print 4
     design_matrix = _info_from_features(design_matrix)
-    print 5
+    # design_matrix = _label_encode_variables(design_matrix)
     design_matrix = _convert_data_types(design_matrix)
-    print 6
-    # design_matrix = _extract_features(design_matrix)
     design_matrix = _create_dummies_for_categorical_features(design_matrix,
                                                              train)
-    print 7
     # if train:
     #     _convert_classes_into_floats(design_matrix)
     return design_matrix
