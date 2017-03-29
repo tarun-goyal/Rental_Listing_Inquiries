@@ -7,35 +7,54 @@ from matplotlib.pylab import rcParams
 from xgboost.sklearn import XGBClassifier
 from sklearn.preprocessing import LabelEncoder
 from nltk.corpus import stopwords
+from sklearn.feature_extraction.text import CountVectorizer
+from nltk import PorterStemmer
 
 
-# Reading data
+rcParams['figure.figsize'] = 18, 12
+
+# Reading training and test data
 train_rental = pd.read_json('../../Rental_Listing_Inquiries_Data/train.json',
                             convert_dates=['created'])
-rcParams['figure.figsize'] = 18, 12
 stop = stopwords.words('english')
-feat_to_clean = ['display_address', 'building_id', 'manager_id']
+feat_to_label_encode = ['street_address', 'building_id', 'manager_id']
+feat_to_clean = ['features', 'description']
 
 
 def cleaning_text(sentence):
+    stemmer = PorterStemmer()
     sentence = sentence.lower()
     sentence = re.sub('[^\w\s]', ' ', sentence)  # removes punctuations
     sentence = re.sub('\d+', ' ', sentence)  # removes digits
     cleaned = ' '.join([w for w in sentence.split() if w not in stop])
     # removes english stopwords
-    cleaned = cleaned.replace('avenue', 'ave')
     cleaned=' '.join([w for w in cleaned.split() if not len(w) <= 2])
     # removes single or double lettered words and digits
+    word_list = [stemmer.stem(word) for word in cleaned.split(" ")]
+    cleaned = ' '.join([w for w in word_list])
     cleaned = cleaned.strip()
     return cleaned
 
-train_rental['display_address'] = train_rental['display_address']\
+train_rental['street_address'] = train_rental['street_address']\
     .apply(lambda x: cleaning_text(x))
 
-for feat in feat_to_clean:
+for feature in feat_to_label_encode:
     label = LabelEncoder()
-    label.fit(list(train_rental[feat].values))
-    train_rental[feat] = label.transform(list(train_rental[feat].values))
+    label.fit(list(train_rental[feature].values))
+    train_rental[feature] = label.transform(list(train_rental[feature].values))
+
+train_rental['features'] = train_rental["features"].apply(
+    lambda x: " ".join(["_".join(i.split(" ")) for i in x]))
+
+for feature in feat_to_clean:
+    if feature == 'description':
+        train_rental[feature] = train_rental[feature].apply(
+            lambda x: cleaning_text(x))
+    train_rental = train_rental.reset_index(drop=True)
+    vectors = CountVectorizer(max_features=100)
+    train_counts = pd.DataFrame(vectors.fit_transform(
+        train_rental[feature]).toarray(), columns=vectors.get_feature_names())
+    train_rental = train_rental.join(train_counts, rsuffix='_N')
 
 
 class XGBoostingModel(object):
@@ -52,7 +71,7 @@ class XGBoostingModel(object):
         model = XGBClassifier(
             seed=99, n_estimators=10000, learning_rate=0.05,
             objective='multi:softprob', subsample=0.9, colsample_bytree=0.8,
-            max_depth=3, min_child_weight=4, reg_alpha=2)
+            max_depth=3, min_child_weight=2, gamma=0, reg_alpha=4)
         return model
 
     def _execute_cross_validation(self, model, cv_folds=5,
