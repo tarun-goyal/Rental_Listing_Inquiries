@@ -18,7 +18,7 @@ train_rental = pd.read_json('../../Rental_Listing_Inquiries_Data/train.json',
                             convert_dates=['created'])
 stop = stopwords.words('english')
 feat_to_label_encode = ['street_address', 'building_id', 'manager_id']
-feat_to_clean = ['features', 'description']
+feat_to_clean = ['features']
 
 
 def cleaning_text(sentence):
@@ -35,6 +35,17 @@ def cleaning_text(sentence):
     cleaned = cleaned.strip()
     return cleaned
 
+
+def cleaning_text2(sentence):
+    sentence = sentence.lower()
+    rdict = {
+        'reduced_fee': 'no_fee'
+    }
+    robj = re.compile('|'.join(rdict.keys()))
+    cleaned = robj.sub(lambda m: rdict[m.group(0)], sentence)
+    cleaned = cleaned.strip()
+    return cleaned
+
 train_rental['street_address'] = train_rental['street_address']\
     .apply(lambda x: cleaning_text(x))
 
@@ -45,13 +56,14 @@ for feature in feat_to_label_encode:
 
 train_rental['features'] = train_rental["features"].apply(
     lambda x: " ".join(["_".join(i.split(" ")) for i in x]))
+train_rental['description'] = train_rental['description'].apply(
+    lambda x: cleaning_text(x))
 
 for feature in feat_to_clean:
-    if feature == 'description':
-        train_rental[feature] = train_rental[feature].apply(
-            lambda x: cleaning_text(x))
+    train_rental[feature] = train_rental[feature].apply(
+        lambda x: cleaning_text2(x))
     train_rental = train_rental.reset_index(drop=True)
-    vectors = CountVectorizer(max_features=100)
+    vectors = CountVectorizer(max_features=200)
     train_counts = pd.DataFrame(vectors.fit_transform(
         train_rental[feature]).toarray(), columns=vectors.get_feature_names())
     train_rental = train_rental.join(train_counts, rsuffix='_N')
@@ -69,7 +81,7 @@ class XGBoostingModel(object):
     def _build_model():
         """Model: Extreme Gradient Boosting model using tuned parameters"""
         model = XGBClassifier(
-            seed=99, n_estimators=10000, learning_rate=0.05,
+            seed=99, n_estimators=5000, learning_rate=0.05,
             objective='multi:softprob', subsample=0.9, colsample_bytree=0.8,
             max_depth=3, min_child_weight=2, gamma=0, reg_alpha=4)
         return model
@@ -98,12 +110,13 @@ class XGBoostingModel(object):
         print "\nCV Results"
         print cv_results
         # cv_results.to_csv("../Model_results/XGB_tuned_CV9_results.csv")
-        # feat_imp = pd.Series(model.booster().get_fscore()).sort_values(
-        #     ascending=False)
-        # feat_imp = feat_imp[:50]
+        feat_imp = pd.Series(model.booster().get_fscore()).sort_values(
+            ascending=False)
+        feat_imp = feat_imp[:50]
+        print feat_imp
         # feat_imp.plot(kind='bar', title='Feature Importance')
         # plt.ylabel('Feature Importance Score')
-        # plt.savefig('../Model_results/XGB_Top50_feat9_imp.png')
+        # plt.savefig('../Model_results/XGB_Top50_feat_imp2.png')
 
     def submit_solution(self):
         """Submit the solution file"""

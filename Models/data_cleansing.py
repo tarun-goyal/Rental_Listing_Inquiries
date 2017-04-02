@@ -1,9 +1,12 @@
 import pandas as pd
+import datetime
+import numpy as np
+import matplotlib.pylab as plt
 
 
 def _convert_data_types(design_matrix):
     """Conversion of categorical type continuous features into objects"""
-    conversion_list = ['bathrooms', 'bedrooms', 'month']
+    conversion_list = ['bathrooms', 'month']
     for column in conversion_list:
         design_matrix[column] = design_matrix[column].apply(str)
     return design_matrix
@@ -28,7 +31,11 @@ def _get_time_features_from_posting_date(design_matrix):
     design_matrix['hour'] = design_matrix['created'].dt.hour
     design_matrix['year'] = design_matrix['created'].dt.year
     design_matrix['weekday'] = design_matrix['created'].dt.weekday
-    design_matrix.drop('created', axis=1, inplace=True)
+    design_matrix['timedelta'] = (
+        datetime.date.today() - design_matrix['created'])
+    design_matrix['total_days'] = design_matrix['timedelta'] /\
+        np.timedelta64(1, 'D')
+    design_matrix.drop(['created', 'timedelta'], axis=1, inplace=True)
     return design_matrix
 
 
@@ -40,6 +47,12 @@ def _length_of_variables(design_matrix):
         .apply(lambda x: len(x.split(" ")))
     design_matrix.drop(['features', 'photos', 'description'],
                        axis=1, inplace=True)
+    return design_matrix
+
+
+def _remove_outliers(design_matrix, train):
+    if train:
+        design_matrix = design_matrix[~(design_matrix.price > 1000000)]
     return design_matrix
 
 
@@ -55,6 +68,7 @@ def clean_design_matrix(design_matrix, train=False):
     design_matrix.drop(['display_address'], axis=1, inplace=True)
     design_matrix = _get_time_features_from_posting_date(design_matrix)
     design_matrix = _length_of_variables(design_matrix)
+    design_matrix = _remove_outliers(design_matrix, train)
     design_matrix = _convert_data_types(design_matrix)
     design_matrix = _create_dummies_for_categorical_features(design_matrix,
                                                              train)

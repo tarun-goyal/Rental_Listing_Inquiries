@@ -18,7 +18,7 @@ test_rental = pd.read_json('../../Rental_Listing_Inquiries_Data/test.json',
                            convert_dates=['created'])
 stop = stopwords.words('english')
 feat_to_label_encode = ['street_address', 'building_id', 'manager_id']
-feat_to_clean = ['features', 'description']
+feat_to_clean = ['features']
 
 
 def cleaning_text(sentence):
@@ -32,6 +32,17 @@ def cleaning_text(sentence):
     # removes single or double lettered words and digits
     word_list = [stemmer.stem(word) for word in cleaned.split(" ")]
     cleaned = ' '.join([w for w in word_list])
+    cleaned = cleaned.strip()
+    return cleaned
+
+
+def cleaning_text2(sentence):
+    sentence = sentence.lower()
+    rdict = {
+        'reduced_fee': 'no_fee'
+    }
+    robj = re.compile('|'.join(rdict.keys()))
+    cleaned = robj.sub(lambda m: rdict[m.group(0)], sentence)
     cleaned = cleaned.strip()
     return cleaned
 
@@ -51,19 +62,22 @@ train_rental['features'] = train_rental["features"].apply(
     lambda x: " ".join(["_".join(i.split(" ")) for i in x]))
 test_rental['features'] = test_rental["features"].apply(
     lambda x: " ".join(["_".join(i.split(" ")) for i in x]))
+train_rental['description'] = train_rental['description'].apply(
+    lambda x: cleaning_text(x))
+test_rental['description'] = test_rental['description'].apply(
+    lambda x: cleaning_text(x))
 
 for feature in feat_to_clean:
-    if feature == 'description':
-        train_rental[feature] = train_rental[feature].apply(
-            lambda x: cleaning_text(x))
-        test_rental[feature] = test_rental[feature].apply(
-            lambda x: cleaning_text(x))
+    train_rental[feature] = train_rental[feature].apply(
+        lambda x: cleaning_text2(x))
+    test_rental[feature] = test_rental[feature].apply(
+        lambda x: cleaning_text2(x))
     train_rental = train_rental.reset_index(drop=True)
     test_rental = test_rental.reset_index(drop=True)
-    vectors = CountVectorizer(max_features=100)
+    vectors = CountVectorizer(max_features=200)
     train_counts = pd.DataFrame(vectors.fit_transform(
         train_rental[feature]).toarray(), columns=vectors.get_feature_names())
-    test_counts = pd.DataFrame(vectors.fit_transform(
+    test_counts = pd.DataFrame(vectors.transform(
         test_rental[feature]).toarray(), columns=vectors.get_feature_names())
     train_rental = train_rental.join(train_counts, rsuffix='_N')
     test_rental = test_rental.join(test_counts, rsuffix='_N')
@@ -88,7 +102,7 @@ class GradientBoostingModel(object):
     def _build_model(design_matrix, predictors):
         """Building gradient boosting model with default parameters."""
         model = XGBClassifier(
-            seed=99, n_estimators=3637, learning_rate=0.05,
+            seed=99, n_estimators=3553, learning_rate=0.05, silent=False,
             objective='multi:softprob', subsample=0.9, colsample_bytree=0.8,
             max_depth=3, min_child_weight=2, gamma=0, reg_alpha=4)
         model.fit(design_matrix[predictors], design_matrix['interest_level'])
@@ -125,7 +139,7 @@ class GradientBoostingModel(object):
         submission['high'] = predictions[:, 0]
         submission['medium'] = predictions[:, 2]
         submission['low'] = predictions[:, 1]
-        submission.to_csv('../Submissions/XGB_FeatText_tuned.csv',
+        submission.to_csv('../Submissions/XGB_FeatText5_tuned.csv',
                           index=False)
         # str(self._calculate_log_loss()) + '.csv', index=False)
 
